@@ -79,49 +79,21 @@ exports.sendInitOrder = functions.database.ref('/order/{uid}')
                                             .catch(function(error){
                                                 console.log("Error sending message: ", error);
                                             });
-        }
-            //-----end ---------send to customer ---finished
 
-/*            //sned to dispatcher-----finished
-            var ref = admin.database().ref("dispatch_token");
-            payloadToDispat_finished = {
-                data:{
-                        orderstate: "f",
-                        content: oneorder.order_detail
-                    }
-            };
-            ref.once("value")
-              .then(function(snapshot) {
-                snapshot.forEach(function(data) {
-                    admin.messaging().sendToDevice(data.key, payloadToDispat_finished)
-                                        .then(function(response){
-                                            console.log("Successfully sent message: ", response);
-                                        })
-                                        .catch(function(error){
-                                            console.log("Error sending message: ", error);
-                                        })
-                });
-                } 
-                //---------end------- sned to dispatcher-----finished
-*/
+
+        }
+           
         return;
       }
 
-    //This will be the notification model that we push to firebase
+    //new order to dispatcher
     var oneorder = event.data.val();
-    var clientemail;
 
-    //eamil detemined by type
-    if(oneorder.orderType == 'customer') {
-        clientemail = oneorder.dropoff_email;
-    } else {
-        clientemail = oneorder.rest_email;
-    }
 
     var payload = {
         data:{
-            ema: clientemail,
-            token: oneorder.notification_user_token,
+            orderstate:"p",
+            orderType: oneorder.orderType,
             content: oneorder.order_detail
         }
     };
@@ -156,4 +128,31 @@ exports.sendInitOrder = functions.database.ref('/order/{uid}')
 
     //Now let's move onto the code, but before that, let's push this to firebase
 
-})
+});
+
+
+exports.driverTokenChange = functions.database.ref('/driver/{driverId}/nofToken')
+    .onWrite(event => {
+      // Grab the current value of what was written to the Realtime Database.
+      const newtoken = event.data.val();
+      const oldtoken = event.data.previous.val();
+
+      if(newtoken !==oldtoken) {
+        var payload = {
+                data:{
+                    message:"taken"
+                    
+                }
+            };
+            admin.messaging().sendToDevice(oldtoken, payload)
+                                        .then(function(response){
+                                            console.log("Successfully sent message: [driver driverTokenChange] ", response);
+                                        })
+                                        .catch(function(error){
+                                            console.log("Error sending message: [driver driverTokenChange]", error);
+                                        })
+      }
+      
+    });
+
+
